@@ -48,7 +48,7 @@ COPY docker/check-neko-stream.sh /usr/local/bin/check-neko-stream
 RUN chmod 0755 /usr/local/bin/check-neko-stream
 COPY docker/set-desktop-mode.sh /usr/local/bin/set-desktop-mode
 COPY docker/start-instance.sh /usr/local/bin/start-instance
-COPY server.mjs smb-browser.mjs smb-auth.mjs package.json /opt/room/
+COPY server.mjs smb-browser.mjs smb-auth.mjs smb-stream.mjs smb-stream.py package.json /opt/room/
 COPY public/ /opt/room/public/
 RUN chmod 0755 /usr/local/bin/start-go2rtc /usr/local/bin/start-go2rtc-as-neko /usr/local/bin/start-mediabridge-as-neko /usr/local/bin/start-desktop-stream /usr/local/bin/set-desktop-mode /usr/local/bin/start-instance \
     && chown -R neko:neko /opt/room /data

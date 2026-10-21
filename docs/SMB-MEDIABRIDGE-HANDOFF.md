@@ -606,3 +606,97 @@ Authenticated playback has not been verified against the user's remote server.
 References:
 - https://packages.debian.org/trixie/libavformat-extra61
 - https://www.samba.org/samba/docs/current/man-html/smbclient.1.html
+
+## Follow-up in Baka-Inu 0.1.64: folder bookmarks, batch queue, SMB start position
+
+This follow-up is newer than the frozen 0.1.62 comparison above. Port these
+changes separately when updating standalone MediaBridge:
+
+- `QueueBatchRequest` and `POST /queue_batch` accept `{mode: "next" | "last",
+  items: QueueItem[]}` with 1–200 items and a 1 MiB body limit. All URLs and display
+  indexes are validated before playback/queue mutation. Per-item autoplay toggles
+  are ignored. Next inserts the selection at the front in selection order; last
+  appends after the entire existing queue, including autoplay suggestions. If idle,
+  the first selected file starts and the remaining files retain their order.
+- `POST /queue` accepts optional `at_end: true` to append literally at the tail.
+  Existing callers retain their normal insertion before autoplay suggestions.
+- SMB launches pass `--resume-playback=no`, `--start=0`, and
+  `--save-position-on-quit=no` so explicit play requests start from the beginning.
+  This prevents a saved mpv watch-later position from resuming at EOF. The user's
+  reported normal EOF exit does not establish that resume was the cause; remote
+  authenticated SMB playback remains unverified.
+- Safe launch logs identify the SMB URL, whether an account is used, and the
+  starting position. Private-output monitoring reports EOF with the playback
+  epoch and elapsed seconds, without printing the authenticated URL.
+
+Baka-Inu integration only:
+
+- The proxy authorizes batches using normal video-control permissions, stamps
+  each item's submitting user and server-selected SMB credential reference, and
+  records successful submissions in the room/user video archives.
+- The admin SMB explorer supports per-file Play next / Play last, filename
+  Play now via `/play_preserve_queue`, checkboxes, Select page, and batch actions.
+  Selection persists across folders/pages in one share and clears on share changes.
+- “Bookmark this folder” creates a subfolder root immediately. `inherit_from`
+  identifies the parent bookmark; the server validates the new URL is within it,
+  then re-encrypts credentials for the new bookmark ID (never copies ciphertext
+  bound to another ID). Session-only sign-ins stay session-only.
+- Root and Home Assistant sources are synchronized. This does not modify the
+  separate standalone MediaBridge project or the frozen comparison snapshots.
+
+mpv option reference: https://mpv.io/manual/stable/#options-resume-playback
+
+## Follow-up in Baka-Inu 0.1.65: verified SMB relay and Docker logging
+
+Live Docker inspection confirmed the actual failure: Debian's installed mpv
+0.40.0 and FFmpeg 7.1.5 do not list SMB as a supported protocol, even with
+`libavformat-extra61` installed. Earlier statements in this document that the
+extra package alone supplies SMB support are superseded by this finding.
+The immediate failure was exit status 2 (unsupported protocol), not saved resume.
+
+MediaBridge changes to port upstream:
+
+- The private credential provider can return `playback_url`. MediaBridge validates
+  it is exactly the configured loopback room port, `/api/internal/smb-media/`, and
+  a 64-hex capability. It sends the URL to mpv over private stdin, retaining the
+  original SMB URL and safe title in public state/history. Old providers returning
+  only credentials still use the previous native-SMB path.
+- `append_linux_log` also writes diagnostics to stderr when
+  `MEDIABRIDGE_LOG_STDERR=1`. The container wrapper enables this and sets
+  `XDG_STATE_HOME=/data/mediabridge/state`. Previously the Linux log macros wrote
+  only to a separate file; Docker therefore missed the relevant playback errors.
+- Unsupported-protocol guidance now recommends the relay, not the extra FFmpeg
+  package as a sufficient fix.
+- SMB error classification excludes optional renderer/audio driver/configuration
+  failures so a missing graphics backend is not reported as a missing SMB file.
+
+Baka-Inu transport implementation:
+
+- New `smb-stream.mjs` and `smb-stream.py` use `python3-smbc` / Samba libsmbclient
+  for read-only file access, independently of mpv's compiled protocols. The
+  helper receives credentials over stdin, never arguments, and emits only safe
+  diagnostics. It reads 256 KiB chunks without downloading the full file.
+- Opaque media capabilities are issued only through the authenticated private
+  credential service. The media route requires a loopback peer, expires after
+  48 hours, is bounded to 64 sessions and 6 concurrent readers, and revalidates
+  bookmark boundaries and current credentials for each request.
+- HTTP GET/HEAD and single byte ranges support seeking and MP4 metadata stored
+  at the end of a file. Disconnects terminate readers; opening is bounded to
+  15 seconds and Samba operations use a 10-second timeout. No new port is exposed.
+- All bookmarked SMB files, including guest shares, receive a provider reference.
+  Both Dockerfiles copy the relay files, the runtime installs `python3-smbc`, and
+  startup explicitly logs relay dependency availability.
+- Supervisor uses INFO logging so child stdout/stderr remain visible without
+  DEBUG echo blocks duplicating every message.
+
+Live verification: an authenticated 70,407,321-byte MP4 was read at the start,
+end, and via a suffix range; invalid ranges returned HTTP 416. mpv decoded 24
+video frames and initialized AAC audio via the relay with exit status 0.
+This verifies file access and decoding, not remote-browser playback quality.
+After deploying the updated local image, a full MediaBridge playback request
+also advanced normally with `nvdec-copy`, reported no playback error, and sought
+to 20 seconds successfully (observed position 21.2 seconds while still playing).
+The container was healthy, and the safe launch/seek messages appeared directly
+in Docker logs without duplicate DEBUG echo blocks.
+
+Binding reference: https://github.com/hamano/pysmbc

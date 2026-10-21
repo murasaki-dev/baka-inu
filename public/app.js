@@ -1,4 +1,4 @@
-import { initSmbBrowser } from '/smb-browser.js?v=0.1.2';
+import { initSmbBrowser } from '/smb-browser.js?v=0.1.3';
 
 let go2rtcPlayerReady;
 async function ensureGo2rtcPlayer() {

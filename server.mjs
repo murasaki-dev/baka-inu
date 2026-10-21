@@ -7,7 +7,8 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { handleSmbBrowser } from './smb-browser.mjs';
-import { handleSmbCredentialRequest, smbShareForPlayback } from './smb-auth.mjs';
+import { handleSmbCredentialRequest, smbShareForPlayback, smbPlaybackFile } from './smb-auth.mjs';
+import { handleSmbMediaRequest } from './smb-stream.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.ROOM_DATA_DIR || path.join(ROOT, 'data');
@@ -454,7 +455,7 @@ function mediaPathPolicy(method, apiPath) {
   const verb = method.toUpperCase();
   const getPaths = new Set(['/status', '/preferences', '/platform', '/settings/port', '/settings/remote-origins', '/sunshine/pair/status']);
   const postPaths = new Set([
-    '/play', '/play_preserve_queue', '/queue', '/queue_next', '/play_playlist', '/queue_playlist', '/queue_playlist_next',
+    '/play', '/play_preserve_queue', '/queue', '/queue_next', '/queue_batch', '/play_playlist', '/queue_playlist', '/queue_playlist_next',
     '/queue/remove', '/queue/play', '/queue/move', '/queue/promote', '/pause', '/resume', '/play_pause',
     '/rewind', '/forward', '/volume_up', '/volume_down', '/zoom_in', '/zoom_out', '/zoom_reset',
     '/seek', '/volume', '/previous', '/next', '/close', '/sleep', '/mouse', '/autoplay', '/resolve', '/resolve_async',
@@ -515,6 +516,15 @@ async function proxyMediaBridge(request, response, user, apiPath) {
       const shareId = smbShareForPlayback(DATA_DIR, body?.url);
       if (shareId) body.smb_share_id = shareId; else delete body.smb_share_id;
     }
+    if (apiPath === '/queue_batch') {
+      if (!Array.isArray(body?.items) || !body.items.length || body.items.length > 200 || !['next', 'last'].includes(body.mode)
+          || body.items.some((item) => !item || typeof item !== 'object' || Array.isArray(item) || typeof item.url !== 'string')) return fail(response, 400, 'Select from 1 to 200 videos and choose next or last');
+      for (const item of body.items) {
+        item.queued_by_user_id = user.id;
+        const shareId = smbShareForPlayback(DATA_DIR, item.url);
+        if (shareId) item.smb_share_id = shareId; else delete item.smb_share_id;
+      }
+    }
   }
   const timeoutMs = ['/resolve', '/play_playlist', '/queue_playlist', '/queue_playlist_next'].includes(apiPath) ? 120_000 : 20_000;
   try {
@@ -527,14 +537,19 @@ async function proxyMediaBridge(request, response, user, apiPath) {
     const payload = await upstream.arrayBuffer();
     if (upstream.ok && apiPath === '/autoplay/error/clear' && cachedStatus) cachedStatus.autoplay_error = null;
     const submissionPaths = new Set(['/play', '/queue', '/queue_next', '/play_playlist', '/queue_playlist', '/queue_playlist_next']);
-    if (upstream.ok && request.method === 'POST' && submissionPaths.has(apiPath) && typeof body?.url === 'string' && body.url.trim()) {
-      state.videoSubmissions.push({ id: newUserId(), user_id: user.id, url: body.url.trim().slice(0, 4096),
-        title: typeof body.title === 'string' ? body.title.slice(0, 300) : null,
-        local: body.local === true, quality: ROOM_QUALITIES.has(String(body.quality)) ? String(body.quality) : null,
-        submitted_at: new Date().toISOString() });
-      const submission = state.videoSubmissions.at(-1);
-      persistedVideoSubmissions.push(submission);
-      appendVideoHistory(submission);
+    const recordSingle = submissionPaths.has(apiPath) || (apiPath === '/play_preserve_queue' && typeof body?.url === 'string' && body.url.startsWith('smb://'));
+    const submittedItems = apiPath === '/queue_batch' ? body?.items : recordSingle ? [body] : [];
+    if (upstream.ok && request.method === 'POST' && submittedItems?.length) {
+      for (const item of submittedItems) {
+        if (typeof item?.url !== 'string' || !item.url.trim()) continue;
+        state.videoSubmissions.push({ id: newUserId(), user_id: user.id, url: item.url.trim().slice(0, 4096),
+          title: typeof item.title === 'string' ? item.title.slice(0, 300) : null,
+          local: item.local === true, quality: ROOM_QUALITIES.has(String(item.quality)) ? String(item.quality) : null,
+          submitted_at: new Date().toISOString() });
+        const submission = state.videoSubmissions.at(-1);
+        persistedVideoSubmissions.push(submission);
+        appendVideoHistory(submission);
+      }
       state.videoSubmissions = state.videoSubmissions.slice(-2000);
       saveState();
     }
@@ -1139,6 +1154,7 @@ async function resolveChatPreviewMedia(pageUrl) {
 
 async function handleApi(request, response, url) {
   if (await handleSmbCredentialRequest({ request, response, url, dataDir: DATA_DIR, json })) return;
+  if (await handleSmbMediaRequest({ request, response, url, resolve: (id, value) => smbPlaybackFile(DATA_DIR, id, value), json })) return;
   if (url.pathname === '/api/admin/hardware' && request.method === 'GET') {
     const user = requireUser(request, response);
     if (!user) return;

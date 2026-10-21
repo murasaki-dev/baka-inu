@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { smbMediaSession } from './smb-stream.mjs';
 
 const sessionCredentials = new Map();
 function secretFile(dataDir, name, bytes) {
@@ -50,9 +51,16 @@ export function smbShareForPlayback(dataDir, value) {
   if (!String(value || '').toLowerCase().startsWith('smb://')) return null;
   try {
     const shares = JSON.parse(fs.readFileSync(path.join(dataDir, 'smb-shares.json'), 'utf8'));
-    return shares.filter((share) => smbUrlInShare(value, share.url) && publicSmbShare(share).has_credentials)
-      .sort((a, b) => b.url.length - a.url.length)[0]?.id || null;
+    const share = shares.filter((share) => smbUrlInShare(value, share.url)).sort((a, b) => b.url.length - a.url.length)[0];
+    if (share) secretFile(dataDir, 'smb-playback.token', 32);
+    return share?.id || null;
   } catch { return null; }
+}
+export function smbPlaybackFile(dataDir, shareId, value) {
+  const shares = JSON.parse(fs.readFileSync(path.join(dataDir, 'smb-shares.json'), 'utf8'));
+  const share = shares.find((item) => item.id === shareId);
+  if (!share || !smbUrlInShare(value, share.url)) throw new Error('SMB file is outside the configured share');
+  return { url: value, credentials: smbCredentials(share, dataDir) };
 }
 export async function handleSmbCredentialRequest({ request, response, url, dataDir, json }) {
   if (url.pathname !== '/api/internal/smb-credentials') return false;
@@ -64,12 +72,9 @@ export async function handleSmbCredentialRequest({ request, response, url, dataD
     json(response, 403, { error: 'Private MediaBridge credential endpoint' }); return true;
   }
   try {
-    const shares = JSON.parse(fs.readFileSync(path.join(dataDir, 'smb-shares.json'), 'utf8'));
-    const share = shares.find((item) => item.id === url.searchParams.get('share'));
-    if (!share || !smbUrlInShare(url.searchParams.get('url'), share.url)) throw new Error('SMB file is outside the configured share');
-    const credentials = smbCredentials(share, dataDir);
-    if (!credentials) throw new Error('SMB credentials are missing; sign in through Browse SMB shares');
-    json(response, 200, credentials);
+    const shareId = url.searchParams.get('share'), value = url.searchParams.get('url');
+    const file = smbPlaybackFile(dataDir, shareId, value);
+    json(response, 200, { ...(file.credentials || { username: '', password: '', domain: '' }), playback_url: smbMediaSession(shareId, value, request.socket.localPort) });
   } catch { json(response, 403, { error: 'SMB credentials unavailable; sign in through Browse SMB shares' }); }
   return true;
 }

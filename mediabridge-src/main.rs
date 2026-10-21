@@ -90,6 +90,9 @@ fn linux_log_path() -> PathBuf {
 fn append_linux_log(message: String) {
     use std::fs::{self, OpenOptions};
     use std::io::Write as _;
+    if env::var("MEDIABRIDGE_LOG_STDERR").is_ok_and(|value| value == "1") {
+        std::eprintln!("[mediabridge] {message}");
+    }
     let path = linux_log_path();
     if let Some(parent) = path.parent() { let _ = fs::create_dir_all(parent); }
     if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
@@ -415,6 +418,12 @@ struct QueueItem {
     autoplay_minutes: Option<u64>,
     #[serde(skip)]
     autoplay_generated: bool,
+}
+
+#[derive(Deserialize)]
+struct QueueBatchRequest {
+    mode: String,
+    items: Vec<QueueItem>,
 }
 
 #[derive(Default)]
@@ -2615,6 +2624,13 @@ fn smb_authenticated_playback_url(item: &QueueItem) -> Result<Option<String>, St
     if response.len() > 32768 || !response.starts_with(b"HTTP/1.1 200 ") { return Err("SMB credentials unavailable; sign in through Browse SMB shares".into()); }
     let split = response.windows(4).position(|window| window == b"\r\n\r\n").ok_or("invalid SMB credential response")?;
     let credentials: serde_json::Value = serde_json::from_slice(&response[split + 4..]).map_err(|_| "invalid SMB credential response")?;
+    if let Some(playback_url) = credentials.get("playback_url").and_then(|value| value.as_str()) {
+        let prefix = format!("http://127.0.0.1:{port}/api/internal/smb-media/");
+        let capability = playback_url.strip_prefix(&prefix).ok_or("invalid SMB relay URL")?;
+        if capability.len() != 64 || !capability.bytes().all(|byte| byte.is_ascii_hexdigit()) { return Err("invalid SMB relay capability".into()); }
+        println!("SMB playback: using seekable loopback relay");
+        return Ok(Some(playback_url.to_string()));
+    }
     let username = credentials.get("username").and_then(|value| value.as_str()).ok_or("SMB username is missing")?;
     let password = credentials.get("password").and_then(|value| value.as_str()).ok_or("SMB password is missing")?;
     let domain = credentials.get("domain").and_then(|value| value.as_str()).unwrap_or("");
@@ -2624,13 +2640,19 @@ fn smb_authenticated_playback_url(item: &QueueItem) -> Result<Option<String>, St
 
 fn smb_playback_error_from_line(line: &str) -> Option<&'static str> {
     let line = line.to_ascii_lowercase();
+    // Renderer/audio fallbacks can mention missing driver/config files even
+    // while the SMB media is playing. They are not failures to open that media.
+    if line.contains("[vo/") || line.contains("[ao/") || line.contains("vdpau backend") || line.contains("pw.conf") {
+        return None;
+    }
     if line.contains("protocol not found") || line.contains("no protocol handler") || line.contains("unsupported protocol") {
-        Some("SMB playback is unavailable in this mpv/FFmpeg build. Rebuild with the SMB-enabled libavformat-extra package.")
+        Some("This mpv build cannot play SMB directly. Rebuild with the internal SMB relay and python3-smbc support.")
     } else if line.contains("nt_status_logon_failure") || line.contains("authentication failed") || line.contains("logon failure") {
         Some("The SMB server rejected the player's sign-in. Edit the bookmark credentials and check the Windows account/domain.")
     } else if line.contains("permission denied") || line.contains("access denied") || line.contains("nt_status_access_denied") {
         Some("The SMB server denied file access. Folder browsing and reading the selected file may have different permissions.")
-    } else if line.contains("no such file") || line.contains("not found") && (line.contains("file") || line.contains("path")) {
+    } else if (line.contains("[file]") || line.contains("[ffmpeg]") || line.contains("[lavf]") || line.contains("smb://"))
+        && (line.contains("no such file") || line.contains("file not found") || line.contains("path not found")) {
         Some("The selected SMB file could not be found. Refresh the folder and queue it again.")
     } else if line.contains("error parsing option") || line.contains("unrecognized option") || line.contains("option not found") {
         Some("mpv rejected a playback startup option. Check the installed mpv version and container image.")
@@ -2647,12 +2669,16 @@ fn watch_mpv_output(output: impl Read + Send + 'static, epoch: u64, error_tx: Se
     thread::spawn(move || {
         let mut reported = false;
         let mut smb_reports = HashSet::new();
+        let started = std::time::Instant::now();
         for line in BufReader::new(output).lines() {
             let Ok(line) = line else { break; };
             // FFmpeg may print the authenticated URL. Keep error categories,
             // but never forward raw player output for authenticated SMB.
             if !private_smb { eprintln!("{line}"); }
             if private_smb {
+                if line.contains("Exiting... (End of file)") {
+                    println!("SMB player attempt {epoch}: reached end of file after {:.1}s", started.elapsed().as_secs_f64());
+                }
                 if let Some(message) = smb_playback_error_from_line(&line) {
                     if smb_reports.insert(message) { eprintln!("SMB player: {message}"); }
                     // Prefer a specific cause over a later generic open failure.
@@ -2722,7 +2748,10 @@ fn start_url(state: &mut State, cfg: &Config, mut item: QueueItem) -> Result<(),
                 format!("--hwdec={}", env::var("MEDIABRIDGE_MPV_HWDEC").unwrap_or_else(|_| "auto".to_string())),
                 "--script-opts=ytdl_hook-ytdl_path=yt-dlp".to_string(),
             ];
-            if item.url.get(..6).is_some_and(|scheme| scheme.eq_ignore_ascii_case("smb://")) { args.push("--ytdl=no".into()); }
+            if item.url.get(..6).is_some_and(|scheme| scheme.eq_ignore_ascii_case("smb://")) {
+                args.extend(["--ytdl=no", "--resume-playback=no", "--start=0", "--save-position-on-quit=no"].map(String::from));
+                println!("Starting SMB playback from 0: {} (account={}, attempt={})", safe_media_url(&item.url), item.smb_share_id.is_some(), state.playback_epoch);
+            }
             let cookie_browser = match cookie_browser_spec(&preferences.cookies_browser, preferences.cookies_profile.as_deref()) {
                 Ok(browser) => browser,
                 Err(error) => { eprintln!("could not select the default cookie browser; continuing without browser cookies: {error}"); None }
@@ -3936,6 +3965,49 @@ fn handle(mut request: Request, cfg: &Config, state: &mut State) {
         }
         respond(request, 202, json(&serde_json::json!({"ok": true, "added": count})), "application/json"); return;
     }
+    if method == Method::Post && path == "/queue_batch" {
+        let mut body = String::new();
+        if request.as_reader().take(1_048_577).read_to_string(&mut body).is_err() || body.len() > 1_048_576 {
+            respond(request, 400, "{\"error\":\"invalid or oversized batch\"}".into(), "application/json"); return;
+        }
+        let mut parsed: QueueBatchRequest = match serde_json::from_str(&body) {
+            Ok(value) => value,
+            Err(error) => { respond(request, 400, json(&serde_json::json!({"error": error.to_string()})), "application/json"); return; }
+        };
+        if !["next", "last"].contains(&parsed.mode.as_str()) || parsed.items.is_empty() || parsed.items.len() > 200 {
+            respond(request, 400, "{\"error\":\"select 1 to 200 videos and choose next or last\"}".into(), "application/json"); return;
+        }
+        // Validate the whole selection before changing playback or the queue.
+        for item in &mut parsed.items {
+            item.url = match clean_media_url(&item.url, item.local_playback) {
+                Ok(url) => url,
+                Err(error) => { respond(request, 400, json(&serde_json::json!({"error": error})), "application/json"); return; }
+            };
+            if item.screen.or(current_playback_preferences(cfg).default_screen).is_some_and(|screen| screen > 32) {
+                respond(request, 400, "{\"error\":\"display index must be from 0 to 32\"}".into(), "application/json"); return;
+            }
+            item.browser = item.browser.take().map(|browser| browser.trim().to_string()).filter(|browser| !browser.is_empty());
+            item.autoplay = None;
+            item.autoplay_minutes = None;
+        }
+        let count = parsed.items.len();
+        if state.current.is_none() {
+            let first = parsed.items.remove(0);
+            let _ = stop_current(state);
+            if let Err(error) = start_url(state, cfg, first) {
+                respond(request, 500, json(&serde_json::json!({"error": error})), "application/json"); return;
+            }
+        }
+        if parsed.mode == "next" {
+            for item in parsed.items.into_iter().rev() { state.queue.push_front(item); }
+        } else { state.queue.extend(parsed.items); }
+        for item in &state.queue {
+            if item.title.is_none() && !state.pending_queue_metadata.iter().any(|url| same_media_url(url, &item.url)) {
+                state.pending_queue_metadata.push_back(item.url.clone());
+            }
+        }
+        respond(request, 202, json(&serde_json::json!({"ok": true, "added": count})), "application/json"); return;
+    }
     if method == Method::Post && ["/play", "/queue", "/queue_next", "/play_preserve_queue"].contains(&path.as_str()) {
         let mut body = String::new();
         if request.as_reader().read_to_string(&mut body).is_err() { respond(request, 400, "{\"error\":\"invalid body\"}".into(), "application/json"); return; }
@@ -3951,7 +4023,10 @@ fn handle(mut request: Request, cfg: &Config, state: &mut State) {
         if path == "/queue_next" && state.current.is_some() {
             state.queue.push_front(parsed);
         }
-        else if path == "/queue" && state.current.is_some() { enqueue_explicit_item(state, parsed); }
+        else if path == "/queue" && state.current.is_some() {
+            let at_end = serde_json::from_str::<serde_json::Value>(&body).ok().and_then(|value| value.get("at_end").and_then(|value| value.as_bool())).unwrap_or(false);
+            if at_end { state.queue.push_back(parsed); } else { enqueue_explicit_item(state, parsed); }
+        }
         else {
             if path == "/play" || path == "/play_preserve_queue" {
                 state.playback_epoch = state.playback_epoch.wrapping_add(1);

@@ -46,5 +46,7 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the service layout and data flow.
 
 ## SMB media browser
 
-The admin's folder button in the top banner opens bookmarked SMB shares. Save a URL such as smb://192.168.1.50/Movies, browse folders, then click a video to add it to the queue or use Play next. Up to 20 share or subfolder bookmarks are stored on the persistent room data volume. Password-protected shares show a themed sign-in prompt. Credentials can be remembered encrypted on the server or kept for this server session; the bookmark Sign in button also lets the admin edit or clear them. No additional container ports are published.
+SMB playback uses a private, seekable HTTP relay backed by Samba's `python3-smbc`, so the packaged mpv does not need native SMB protocol support. No extra port is exposed. MediaBridge diagnostics are included in Docker logs and also saved in `/data/mediabridge/state/mediabridge/mediabridge.log`.
+
+The admin's folder button in the top banner opens bookmarked SMB shares. Save a URL such as smb://192.168.1.50/Movies, then browse folders. Click a filename to play immediately while preserving the remaining queue, or use Play next / Play last. Checkboxes let you add up to 200 files together in selection order, including selections across folders and pages within the same share. “Select page” selects visible files. “Bookmark this folder” saves the current folder and retains its sign-in. Up to 20 share or subfolder bookmarks are stored on the persistent room data volume. Password-protected shares show a themed sign-in prompt. Credentials can be remembered encrypted on the server or kept for this server session; the bookmark Sign in button also lets the admin edit or clear them. No additional container ports are published.
 

@@ -7,7 +7,7 @@ apt-get install -y --no-install-recommends \
   ca-certificates curl xz-utils squashfs-tools unzip \
   nodejs openbox mpv yt-dlp playerctl xdotool xdg-utils smbclient libavformat-extra \
   intel-media-va-driver mesa-va-drivers \
-  python3 python3-secretstorage libnotify-bin feh \
+  python3 python3-smbc python3-secretstorage libnotify-bin feh \
   libgtk-3-0 libayatana-appindicator3-1 libnss3 libdbus-glib-1-2 \
   libxss1 libasound2 libpulse0 libdrm2 libgbm1 libx11-xcb1 libxtst6 \
   libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libxrender1 libxcb1

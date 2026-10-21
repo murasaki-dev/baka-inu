@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#11130f">
     <title>Baka-Inu</title>
     <link id="site-favicon" rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="stylesheet" href="/style.css?v=0.2.58">
-    <script type="module" src="/app.js?v=0.2.72"></script>
+    <link rel="stylesheet" href="/style.css?v=0.2.59">
+    <script type="module" src="/app.js?v=0.2.73"></script>
   </head>
   <body>
     <main id="auth-view" class="auth-wrap" hidden>
@@ -311,11 +311,12 @@
 
       <dialog id="smb-dialog" class="dialog-card smb-dialog" aria-labelledby="smb-heading">
         <form method="dialog" class="dialog-head"><div><p class="eyebrow">LOCAL NETWORK MEDIA</p><h2 id="smb-heading">Browse SMB shares</h2></div><button class="icon-button" aria-label="Close">×</button></form>
-        <p class="muted smb-help">Bookmark a share, then click a video to queue it. If the share requires an account, you’ll be prompted to sign in.</p>
+        <p class="muted smb-help">Click a filename to play now, or select videos to play next or last. Your remaining queue is preserved. Shares requiring an account will prompt you to sign in.</p>
         <div class="smb-share-picker"><select id="smb-share" aria-label="Bookmarked share"></select><button class="button subtle" type="button" id="smb-share-signin">Sign in</button><button class="button subtle" type="button" id="smb-share-edit">Edit</button><button class="button subtle" type="button" id="smb-share-remove">Remove bookmark</button></div>
         <details class="smb-add-share"><summary id="smb-share-form-heading">Bookmark a share</summary><form id="smb-share-form"><label>Name<input id="smb-share-name" maxlength="80" placeholder="Movies" required></label><label>Share URL<input id="smb-share-url" type="url" placeholder="smb://192.168.1.50/Movies" required></label><div class="smb-bookmark-actions"><button class="button primary" id="smb-share-save" type="submit">Save bookmark</button><button class="button subtle" id="smb-share-edit-cancel" type="button" hidden>Cancel edit</button></div></form></details>
-        <nav class="smb-navigation" aria-label="Share folders"><button class="button subtle" id="smb-up" type="button">↑ Up</button><div id="smb-breadcrumbs"></div><button class="button subtle" id="smb-refresh" type="button">Refresh</button></nav>
+        <nav class="smb-navigation" aria-label="Share folders"><button class="button subtle" id="smb-up" type="button">↑ Up</button><div id="smb-breadcrumbs"></div><button class="button subtle" id="smb-bookmark-folder" type="button" disabled>Bookmark this folder</button><button class="button subtle" id="smb-refresh" type="button">Refresh</button></nav>
         <p id="smb-status" class="muted smb-status" role="status" aria-live="polite"></p>
+        <div class="smb-selection-toolbar"><label><input id="smb-select-all" type="checkbox"> Select page</label><span id="smb-selected-count" role="status">0 selected</span><button class="button subtle" id="smb-selection-clear" type="button" disabled>Clear</button><button class="button subtle" id="smb-selection-next" type="button" disabled>Play next</button><button class="button subtle" id="smb-selection-last" type="button" disabled>Play last</button></div>
         <div id="smb-files" class="smb-files"></div>
         <div class="smb-pagination"><button class="button subtle" id="smb-prev" type="button">Previous</button><span id="smb-page"></span><button class="button subtle" id="smb-next" type="button">Next</button></div>
       </dialog>

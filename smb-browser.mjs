@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { StringDecoder } from 'node:string_decoder';
 import os from 'node:os';
-import { smbCredentials, storeSmbCredentials, forgetSmbCredentials, publicSmbShare } from './smb-auth.mjs';
+import { smbCredentials, storeSmbCredentials, forgetSmbCredentials, publicSmbShare, smbUrlInShare } from './smb-auth.mjs';
 
 const VIDEO = /\.(?:mkv|mp4|m4v|avi|mov|webm|mpeg|mpg|ts|m2ts|mts|wmv|flv|ogv|vob)$/i;
 let activeListings = 0;
@@ -101,6 +101,12 @@ export async function handleSmbBrowser({ request, response, url, user, dataDir, 
       const normalized = shareUrl(body.url);
       if (shares.some((share, position) => position !== index && share.url === normalized)) throw new Error('Share already bookmarked');
       const bookmark = { ...(editing ? shares[index] : {}), id: editing ? shares[index].id : crypto.randomBytes(12).toString('hex'), name: String(body.name || new URL(normalized).hostname).trim().slice(0, 80), url: normalized };
+      if (!editing && body.inherit_from) {
+        const parent = shares.find((share) => share.id === body.inherit_from);
+        if (!parent || !smbUrlInShare(normalized, parent.url)) throw new Error('Folder must be inside the selected share');
+        const credentials = smbCredentials(parent, dataDir);
+        if (credentials) storeSmbCredentials(bookmark, { ...credentials, remember: Boolean(parent.credentials) }, dataDir);
+      }
       if (editing && new URL(shares[index].url).host + new URL(shares[index].url).pathname.split('/')[1] !== new URL(normalized).host + new URL(normalized).pathname.split('/')[1]) forgetSmbCredentials(bookmark);
       if (editing) shares[index] = bookmark; else shares.push(bookmark);
       fs.writeFileSync(file, JSON.stringify(shares, null, 2), { mode: 0o600 });

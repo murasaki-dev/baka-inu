@@ -98,4 +98,9 @@ if missing:
 PY
 
 echo "Starting Baka-Inu with $BACKEND desktop streaming"
-exec /usr/bin/supervisord -c /etc/neko/supervisord.conf
+if python3 -c 'import smbc' >/dev/null 2>&1; then
+  echo "SMB playback: seekable internal relay available (python3-smbc)"
+else
+  echo "SMB playback unavailable: python3-smbc is missing; rebuild this image" >&2
+fi
+exec /usr/bin/supervisord -c /etc/neko/supervisord.conf --loglevel=info
