@@ -48,4 +48,3 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the service layout and data flow.
 
 The admin's folder button in the top banner opens bookmarked SMB shares. Save a URL such as smb://192.168.1.50/Movies, browse folders, then click a video to add it to the queue or use Play next. Up to 20 share or subfolder bookmarks are stored on the persistent room data volume. Password-protected shares show a themed sign-in prompt. Credentials can be remembered encrypted on the server or kept for this server session; the bookmark Sign in button also lets the admin edit or clear them. No additional container ports are published.
 
-Rebuild the image to install smbclient and the SMB-enabled extra FFmpeg library. The share must be reachable from the container. See [SMB integration and MediaBridge handoff](docs/SMB-MEDIABRIDGE-HANDOFF.md) for implementation details and the future authentication work.
