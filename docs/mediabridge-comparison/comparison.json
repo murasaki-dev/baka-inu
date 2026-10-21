@@ -1,0 +1,355 @@
+{
+  "compared_on": "2026-10-21",
+  "standalone_root": "C:/Users/Administrator/Documents/mediabridge",
+  "bundled_root": "C:\\Users\\Administrator\\Documents\\inu\\mediabridge-src",
+  "standalone_commit": "fc147de68b223a6d3c45a104c1614398805628be",
+  "standalone_worktree_clean": true,
+  "files": [
+    {
+      "file": "main.rs",
+      "standalone_sha256": "b4a5f329e82de80cf0336eec1d11eacb3488ae0419f16a164221ec30d6df3e12",
+      "bundled_sha256": "074271693dc89d2dfd63e69ce72039cf48cf585493190421dfd18830255bc9b4",
+      "added": 350,
+      "removed": 72,
+      "hunks": [
+        {
+          "id": "R01",
+          "old_line": 118,
+          "new_line": 118,
+          "context": "struct Config {"
+        },
+        {
+          "id": "R02",
+          "old_line": 129,
+          "new_line": 130,
+          "context": "struct UserConfig {"
+        },
+        {
+          "id": "R03",
+          "old_line": 141,
+          "new_line": 143,
+          "context": "impl Default for UserConfig {"
+        },
+        {
+          "id": "R04",
+          "old_line": 154,
+          "new_line": 157,
+          "context": "impl Default for UserConfig {"
+        },
+        {
+          "id": "R05",
+          "old_line": 222,
+          "new_line": 227,
+          "context": "fn load_user_config() -> Result<UserConfig, String> {"
+        },
+        {
+          "id": "R06",
+          "old_line": 271,
+          "new_line": 280,
+          "context": "fn validate_preferences(preferences: &PlaybackPreferences) -> Result<(), String>"
+        },
+        {
+          "id": "R07",
+          "old_line": 284,
+          "new_line": 296,
+          "context": "fn validate_preferences(preferences: &PlaybackPreferences) -> Result<(), String>"
+        },
+        {
+          "id": "R08",
+          "old_line": 291,
+          "new_line": 323,
+          "context": "fn save_playback_preferences(preferences: PlaybackPreferences) -> Result<(), Str"
+        },
+        {
+          "id": "R09",
+          "old_line": 329,
+          "new_line": 362,
+          "context": "fn current_playback_preferences(cfg: &Config) -> PlaybackPreferences {"
+        },
+        {
+          "id": "R10",
+          "old_line": 340,
+          "new_line": 374,
+          "context": "fn current_playback_preferences(cfg: &Config) -> PlaybackPreferences {"
+        },
+        {
+          "id": "R11",
+          "old_line": 397,
+          "new_line": 439,
+          "context": "struct State {"
+        },
+        {
+          "id": "R12",
+          "old_line": 456,
+          "new_line": 504,
+          "context": "struct SeekRequest { position: f64 }"
+        },
+        {
+          "id": "R13",
+          "old_line": 488,
+          "new_line": 536,
+          "context": "struct PlaybackPreferencesRequest {"
+        },
+        {
+          "id": "R14",
+          "old_line": 503,
+          "new_line": 553,
+          "context": "struct PortChangeRequest { port: u16 }"
+        },
+        {
+          "id": "R15",
+          "old_line": 535,
+          "new_line": 586,
+          "context": "fn default_app() -> String { \"Desktop\".into() }"
+        },
+        {
+          "id": "R16",
+          "old_line": 561,
+          "new_line": 617,
+          "context": "struct Status {"
+        },
+        {
+          "id": "R17",
+          "old_line": 576,
+          "new_line": 635,
+          "context": "fn usage() -> &'static str {"
+        },
+        {
+          "id": "R18",
+          "old_line": 668,
+          "new_line": 727,
+          "context": "fn config() -> Result<Config, String> {"
+        },
+        {
+          "id": "R19",
+          "old_line": 692,
+          "new_line": 754,
+          "context": "fn config() -> Result<Config, String> {"
+        },
+        {
+          "id": "R20",
+          "old_line": 762,
+          "new_line": 825,
+          "context": "fn cookie_browser_spec(browser: &str, profile: Option<&str>) -> Result<Option<St"
+        },
+        {
+          "id": "R21",
+          "old_line": 1234,
+          "new_line": 1309,
+          "context": "fn clean_media_url(input: &str, allow_smb: bool) -> Result<String, String> {"
+        },
+        {
+          "id": "R22",
+          "old_line": 1284,
+          "new_line": 1360,
+          "context": "fn run_cancellable_command(mut command: Command, cancel: &AtomicBool) -> Result<"
+        },
+        {
+          "id": "R23",
+          "old_line": 1303,
+          "new_line": 1385,
+          "context": "fn resolve_media_url(url: &str) -> Result<serde_json::Value, String> { resolve_m"
+        },
+        {
+          "id": "R24",
+          "old_line": 1334,
+          "new_line": 1417,
+          "context": "fn resolve_media_url_with_cancel(url: &str, cancel: Option<&AtomicBool>) -> Resu"
+        },
+        {
+          "id": "R25",
+          "old_line": 1361,
+          "new_line": 1445,
+          "context": "fn parse_youtube_playlist_json(output: &[u8]) -> Result<Vec<String>, String> {"
+        },
+        {
+          "id": "R26",
+          "old_line": 1405,
+          "new_line": 1518,
+          "context": "fn drain_metadata(state: &mut State) {"
+        },
+        {
+          "id": "R27",
+          "old_line": 1414,
+          "new_line": 1536,
+          "context": "fn dispatch_pending_metadata(state: &mut State) {"
+        },
+        {
+          "id": "R28",
+          "old_line": 1441,
+          "new_line": 1560,
+          "context": "fn dispatch_pending_metadata(state: &mut State) {"
+        },
+        {
+          "id": "R29",
+          "old_line": 1459,
+          "new_line": 1580,
+          "context": "fn drain_autoplay_results(state: &mut State) {"
+        },
+        {
+          "id": "R30",
+          "old_line": 1467,
+          "new_line": 1589,
+          "context": "fn drain_autoplay_results(state: &mut State) {"
+        },
+        {
+          "id": "R31",
+          "old_line": 2399,
+          "new_line": 2583,
+          "context": "fn playback_error_from_line(line: &str) -> Option<&'static str> {"
+        },
+        {
+          "id": "R32",
+          "old_line": 2460,
+          "new_line": 2685,
+          "context": "fn start_url(state: &mut State, cfg: &Config, mut item: QueueItem) -> Result<(),"
+        },
+        {
+          "id": "R33",
+          "old_line": 2490,
+          "new_line": 2718,
+          "context": "fn start_url(state: &mut State, cfg: &Config, mut item: QueueItem) -> Result<(),"
+        },
+        {
+          "id": "R34",
+          "old_line": 2621,
+          "new_line": 2856,
+          "context": "fn start_url(state: &mut State, cfg: &Config, mut item: QueueItem) -> Result<(),"
+        },
+        {
+          "id": "R35",
+          "old_line": 2885,
+          "new_line": 3125,
+          "context": "fn open_librewolf_sign_in(url: &str) -> Result<Child, String> {"
+        },
+        {
+          "id": "R36",
+          "old_line": 2947,
+          "new_line": 3190,
+          "context": "fn mpv_property(path: &Path, property: &str) -> Option<serde_json::Value> {"
+        },
+        {
+          "id": "R37",
+          "old_line": 3261,
+          "new_line": 3514,
+          "context": "fn media_status(state: &mut State) -> Status {"
+        },
+        {
+          "id": "R38",
+          "old_line": 3310,
+          "new_line": 3572,
+          "context": "fn media_status(state: &mut State) -> Status {"
+        },
+        {
+          "id": "R39",
+          "old_line": 3575,
+          "new_line": 3840,
+          "context": "fn handle(mut request: Request, cfg: &Config, state: &mut State) {"
+        },
+        {
+          "id": "R40",
+          "old_line": 3616,
+          "new_line": 3885,
+          "context": "fn handle(mut request: Request, cfg: &Config, state: &mut State) {"
+        },
+        {
+          "id": "R41",
+          "old_line": 3632,
+          "new_line": 3900,
+          "context": "fn handle(mut request: Request, cfg: &Config, state: &mut State) {"
+        },
+        {
+          "id": "R42",
+          "old_line": 3644,
+          "new_line": 3912,
+          "context": "fn handle(mut request: Request, cfg: &Config, state: &mut State) {"
+        },
+        {
+          "id": "R43",
+          "old_line": 3677,
+          "new_line": 3952,
+          "context": "fn handle(mut request: Request, cfg: &Config, state: &mut State) {"
+        },
+        {
+          "id": "R44",
+          "old_line": 3699,
+          "new_line": 3977,
+          "context": "fn handle(mut request: Request, cfg: &Config, state: &mut State) {"
+        },
+        {
+          "id": "R45",
+          "old_line": 3875,
+          "new_line": 4152,
+          "context": "fn run_server(cfg: Config, shutdown: Option<Arc<AtomicBool>>) -> Result<Option<S"
+        }
+      ]
+    },
+    {
+      "file": "Cargo.toml",
+      "standalone_sha256": "987b652bef3439f022f3d05f13ae30635e71543c041e7d8c59325bcdd369dd02",
+      "bundled_sha256": "987b652bef3439f022f3d05f13ae30635e71543c041e7d8c59325bcdd369dd02",
+      "added": 0,
+      "removed": 0,
+      "hunks": []
+    },
+    {
+      "file": "Cargo.lock",
+      "standalone_sha256": "508d8e3e8e3f2d2305e21ff6ede2160cb0a1bfd2a2e7b5259c1db22e0d7c2ce8",
+      "bundled_sha256": "508d8e3e8e3f2d2305e21ff6ede2160cb0a1bfd2a2e7b5259c1db22e0d7c2ce8",
+      "added": 0,
+      "removed": 0,
+      "hunks": []
+    },
+    {
+      "file": "web/index.html",
+      "standalone_sha256": "9011850a960e46d65c61eb80b214f69c1748103ad1280e4c8615acb55a63a65c",
+      "bundled_sha256": "60f90beebc2dd1907b691c1477cf46a864f0e478d0b45a6113c6752dfd3b6908",
+      "added": 13,
+      "removed": 21,
+      "hunks": [
+        {
+          "id": "W01",
+          "old_line": 73,
+          "new_line": 73,
+          "context": ""
+        },
+        {
+          "id": "W02",
+          "old_line": 103,
+          "new_line": 106,
+          "context": ""
+        },
+        {
+          "id": "W03",
+          "old_line": 288,
+          "new_line": 291,
+          "context": ""
+        },
+        {
+          "id": "W04",
+          "old_line": 306,
+          "new_line": 303,
+          "context": ""
+        },
+        {
+          "id": "W05",
+          "old_line": 347,
+          "new_line": 345,
+          "context": ""
+        },
+        {
+          "id": "W06",
+          "old_line": 358,
+          "new_line": 357,
+          "context": ""
+        },
+        {
+          "id": "W07",
+          "old_line": 720,
+          "new_line": 719,
+          "context": ""
+        }
+      ]
+    }
+  ]
+}

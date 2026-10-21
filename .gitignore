@@ -1,0 +1,26 @@
+# Local secrets and overrides
+.env
+.env.*
+!.env.example
+
+# Persistent room state and uploaded content
+/data/
+
+# Build outputs and dependencies
+node_modules/
+**/target/
+dist/
+build/
+
+# Local editor/OS files and logs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+*.zip
+
+homeassistant/
+
+# Experimental HTTP video streaming container
+/experimental-stream/

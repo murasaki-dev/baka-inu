@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.git
+.github
+data
+experimental-stream
+node_modules
+**/target
+**/*.log
+*.zip

@@ -1,0 +1,46 @@
+services:
+  mediabridge-room:
+    build: .
+    image: mediabridge-room:local
+    restart: unless-stopped
+    init: true
+    shm_size: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    ports:
+      - "${ROOM_PORT:-8080}:8081"
+      - "52000-52100:52000-52100/udp"
+    environment:
+      USER: neko
+      DISPLAY: :99.0
+      ROOM_JOIN_CODE: ${ROOM_JOIN_CODE:?Set ROOM_JOIN_CODE in .env}
+      ROOM_ADMIN_USERNAME: ${ROOM_ADMIN_USERNAME:-admin}
+      ROOM_ADMIN_PASSWORD: ${ROOM_ADMIN_PASSWORD:?Set ROOM_ADMIN_PASSWORD in .env}
+      ROOM_NAME: ${ROOM_NAME:-Baka-Inu}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      ROOM_INITIAL_WEBRTC_ADDRESS: ${NEKO_WEBRTC_NAT1TO1:-}
+      ROOM_INITIAL_WEBRTC_RANGE: ${NEKO_WEBRTC_EPR:-52000-52100}
+      NEKO_CONFIG: /data/room/neko.json
+      NEKO_SERVER_BIND: 127.0.0.1:8080
+      NEKO_SERVER_PATH_PREFIX: /neko
+      NEKO_MEMBER_PROVIDER: multiuser
+      NEKO_MEMBER_MULTIUSER_USER_PASSWORD: ${ROOM_JOIN_CODE:?Set ROOM_JOIN_CODE in .env}
+      NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD: ${ROOM_ADMIN_PASSWORD:?Set ROOM_ADMIN_PASSWORD in .env}
+      NEKO_SESSION_IMPLICIT_HOSTING: "true"
+      NEKO_DESKTOP_SCREEN: ${NEKO_DESKTOP_SCREEN:-1280x720@30}
+      VIRTUAL_DESKTOP_SCREEN: ${VIRTUAL_DESKTOP_SCREEN:-1280x720@30}
+      DESKTOP_SCREEN: ${DESKTOP_SCREEN:-1280x720}
+      STREAM_ENCODER: ${STREAM_ENCODER:-auto}
+      STREAMING_BACKEND: ${STREAMING_BACKEND:-neko}
+      MEDIABRIDGE_MPV_HWDEC: ${MEDIABRIDGE_MPV_HWDEC:-auto}
+    volumes:
+      - room-data:/data
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 20s
+
+volumes:
+  room-data:

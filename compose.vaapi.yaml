@@ -1,0 +1,6 @@
+services:
+  mediabridge-room:
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${GPU_RENDER_GID:?Set GPU_RENDER_GID to the numeric group ID that owns /dev/dri/renderD128}"

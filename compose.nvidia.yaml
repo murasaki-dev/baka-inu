@@ -1,0 +1,12 @@
+services:
+  mediabridge-room:
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: video,compute,utility,graphics
+      NVIDIA_VISIBLE_DEVICES: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

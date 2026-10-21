@@ -1,0 +1,5 @@
+api:
+  listen: 127.0.0.1:1984
+  origin: "*"
+streams:
+  desktop: exec:/usr/local/bin/start-desktop-stream
